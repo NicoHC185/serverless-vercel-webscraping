@@ -1,0 +1,24 @@
+{
+  "name": "test-webscraping",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@sparticuz/chromium": "^126.0.0",
+    "@sparticuz/chromium-min": "^126.0.0",
+    "jsdom": "^24.0.0",
+    "puppeteer-core": "^22.13.1",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-adblocker": "^2.13.6",
+    "rxjs": "^7.8.1",
+    "user-agents": "^1.1.155"
+  },
+  "author": "",
+  "license": "ISC"
+}
