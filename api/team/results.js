@@ -1,14 +1,7 @@
 const { startBrowser } = require("../../lib/puppeteer");
-const { JSDOM } = require("jsdom");
 const UserAgent = require("user-agents");
+const { getElement, bodyJSON } = require("../../utils");
 const urlTeam = `https://www.basketball-reference.com/teams`;
-
-async function getElement(page, selector) {
-  const tableElement = await page.$eval(`${selector}`, (el) => el.outerHTML);
-  const tableDOM = new JSDOM(tableElement);
-  const { document } = tableDOM.window;
-  return document;
-}
 
 async function _getGameResult({ page }) {
   const document = await getElement(page, `#timeline_results`);
@@ -40,7 +33,7 @@ async function _getGameResult({ page }) {
 
 module.exports = async (req, res) => {
   try {
-    const { codeTeam, year } = req.body;
+    const { codeTeam, year } = bodyJSON(req.body);
     const url = `${urlTeam}/${codeTeam}/${year}.html`;
     const browser = await startBrowser();
     const page = await browser.newPage();

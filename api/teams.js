@@ -7,16 +7,7 @@ const {
 } = require("../lib/puppeteer");
 const UserAgent = require("user-agents");
 const { JSDOM } = require("jsdom");
-
-const urlTeam = `https://www.basketball-reference.com/teams`;
-const url = `https://www.basketball-reference.com/leagues/`;
-
-async function getElement(page, selector) {
-  const tableElement = await page.$eval(`${selector}`, (el) => el.outerHTML);
-  const tableDOM = new JSDOM(tableElement);
-  const { document } = tableDOM.window;
-  return document;
-}
+const { url } = require("../utils");
 
 function _getTeams({ teamsHTML }) {
   const teams = [...teamsHTML].map((el) => {
@@ -50,32 +41,6 @@ function _getConferences(el) {
   };
 }
 
-async function _getInfoTeam({ page }) {
-  const teamDocument = await getElement(
-    page,
-    `[data-template="Partials/Teams/Summary"]`
-  );
-  const name = teamDocument
-    .getElementsByTagName("h1")[0]
-    .querySelectorAll("span")[1].textContent;
-
-  const info = [...teamDocument.querySelectorAll("p")].map((el) => {
-    const newText = String(el.textContent)
-      .replace(/[\n\t]+/g, "")
-      .split(" ")
-      .filter((el) => el !== "")
-      .join(" ");
-    return newText;
-  });
-  const res = {
-    name: name,
-    record: info.find((el) => /Record/.test(el))?.split(":")[1] || "",
-    coach: info.find((el) => /Coach/.test(el))?.split(":")[1] || "",
-    executive: info.find((el) => /Executive/.test(el))?.split(":")[1] || "",
-  };
-  return res;
-}
-
 const GetTeams = async (res) => {
   const browser = await startBrowser();
   const page = await browser.newPage();
@@ -99,32 +64,10 @@ const GetTeams = async (res) => {
   return data;
 };
 
-async function getTeamByCode({ codeTeam, year, res }) {
-  const url = `${urlTeam}/${codeTeam}/${year}.html`;
-  const browser =
-    process.env.ENV === "DEV"
-      ? await initialBrowser()
-      : await initialBrowserCore();
-  const page = await browser.newPage();
-  const userAgent = new UserAgent();
-  await page.setUserAgent(userAgent.toString());
-  await page.setViewport({
-    width: 1920,
-    height: 1080,
-  });
-  await page.goto(url);
-  const infoTeam = await _getInfoTeam({ page: page });
-  await browser.close();
-  return infoTeam;
-}
-
 module.exports = async (req, res) => {
   try {
     if (req.method === "GET") {
       const data = await GetTeams();
-      res.status(200).json({ response: data });
-    } else if (req.method === "POST") {
-      const data = await getTeamByCode({ ...req.body, res });
       res.status(200).json({ response: data });
     }
   } catch (err) {

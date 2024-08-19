@@ -1,14 +1,6 @@
 const { startBrowser } = require("../../lib/puppeteer");
-const { JSDOM } = require("jsdom");
 const UserAgent = require("user-agents");
-const urlTeam = `https://www.basketball-reference.com/teams`;
-
-async function getElement(page, selector) {
-  const tableElement = await page.$eval(`${selector}`, (el) => el.outerHTML);
-  const tableDOM = new JSDOM(tableElement);
-  const { document } = tableDOM.window;
-  return document;
-}
+const { urlTeam, getElement, bodyJSON } = require("../../utils");
 
 function _getInfoPlayer({ row }) {
   const number = row.querySelector('[data-stat="number"]')?.textContent;
@@ -39,20 +31,24 @@ async function _getRoster({ page }) {
 
 module.exports = async (req, res) => {
   try {
-    const { codeTeam, year } = req.body;
+    const { codeTeam, year } = bodyJSON(req.body);
     const url = `${urlTeam}/${codeTeam}/${year}.html`;
-    const browser = await startBrowser();
-    const page = await browser.newPage();
-    const userAgent = new UserAgent();
-    await page.setUserAgent(userAgent.toString());
-    await page.setViewport({
-      width: 1920,
-      height: 1080,
-    });
-    await page.goto(url);
-    const roster = await _getRoster({ page: page });
-    await browser.close();
-    res.status(200).json({ response: roster });
+    if (req.method === "POST") {
+      const browser = await startBrowser();
+      const page = await browser.newPage();
+      const userAgent = new UserAgent();
+      await page.setUserAgent(userAgent.toString());
+      await page.setViewport({
+        width: 1920,
+        height: 1080,
+      });
+      await page.goto(url);
+      const roster = await _getRoster({ page: page });
+      await browser.close();
+      res.status(200).json({ response: roster });
+    } else {
+      res.status(200).json({ response: "roster" });
+    }
   } catch (err) {
     console.log(err);
     res.status(500).json({ err });
