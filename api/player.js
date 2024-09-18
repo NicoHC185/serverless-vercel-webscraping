@@ -35,18 +35,61 @@ async function __infoPlayer(id) {
   });
   const url = `https://basketball-reference.com/players/${id[0]}/${id}.html`;
   await page.goto(url);
-  const elements = await page.$$eval("#per_game", (el) =>
+  const mediaPlayer = await page.$eval("#meta", (el) => el.outerHTML);
+  const MediaDOMDoc = new JSDOM(`${mediaPlayer}`).window.document;
+  const imgPlayer = MediaDOMDoc.querySelector("div>img");
+  const infoPlayerDocument = new JSDOM(`${mediaPlayer}`).window.document;
+  const namePlayer = infoPlayerDocument.querySelector("span");
+  const infoPlayer = [...infoPlayerDocument.querySelectorAll("p")];
+  const elementsSeasons = await page.$$eval("#per_game", (el) =>
     el.map((item) => item.outerHTML)
   );
-
-  const arr = elements.map((el) => {
+  const arrSeason = elementsSeasons.map((el) => {
     const DOM = new JSDOM(`${el}`);
-    const columns = [...DOM.window.document.querySelectorAll("tbody>tr")];
-    const data = columns.map((el) => __getInfoSeason(el));
+    const columns = DOM.window.document.querySelectorAll("tbody>tr");
+    const data = [...columns].map((el) => __getInfoSeason(el));
     return data;
   });
+
+  const nickNames = infoPlayer[2].textContent.replace(/\(|\)|\n/g, "");
+  const socialMedias = [...infoPlayer[1].querySelectorAll("a")]
+    .filter((el) => el.getAttribute("href").match(/https/g))
+    .map((el) => {
+      return el.getAttribute("href");
+    });
+  const rol = {};
+  infoPlayer[3].textContent
+    .replace(/\n|\s/g, "")
+    .split("▪")
+    .forEach((el) => {
+      const stringSplit = el.split(":");
+      rol[stringSplit[0]] = stringSplit[1];
+    });
+  const sizes = infoPlayer[4].textContent.replace(/\n/g, "");
+  const birthday = infoPlayer[6].textContent
+    .replace(/\n|Born:/g, "")
+    .replace(/\s+/g, " ");
+  const teamDrafter = infoPlayer[5].textContent.replace(/\n|Team: /g, "");
+  const draft = infoPlayer[7].textContent.replace(/\n|Draft:/g, "").split(", ");
+  const draftPick = `${draft[1]}, ${draft[2]}`;
+  const draftYear = draft[3];
+  const info = {
+    nickNames,
+    birthday,
+    socialMedias,
+    rol,
+    sizes,
+    teamDrafter,
+    draftPick,
+    draftYear,
+  };
   browser.close();
-  return arr;
+  return {
+    namePlayer: namePlayer.textContent,
+    infoPlayer: info,
+    imgUrl: imgPlayer.getAttribute("src"),
+    seasonsInfo: arrSeason,
+  };
 }
 
 module.exports = async (req, res) => {
